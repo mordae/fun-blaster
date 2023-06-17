@@ -21,6 +21,7 @@
 #include <task.h>
 
 #include "ircodes.h"
+#include "ws.h"
 
 
 /* 0 - 24 */
@@ -131,12 +132,21 @@ void tx_task(void)
 			/* Indicate how far are we. */
 			printf("tx: ir_script_%03i (freq=%u)\n", i, script->freq);
 
+			/* Act alive so that the user knows we are transmitting. */
+			ws_set_rgb(0, 7 * (i & 1), 0);
+
 			/* Play the script. */
 			tx_play_script(script);
+
+			/* Turn the LED off to indicate we are paused. */
+			ws_set_rgb(0, 0, 0);
 
 			/* Pause for a bit to have some space between the
 			 * transmissions. And also to keep the LEDs cool. */
 			task_sleep_ms(25);
 		}
+
+		/* Return to normal. */
+		ws_set_rgb(3, 0, 0);
 	}
 }
