@@ -49,3 +49,6 @@
 #define LED_RED_MUL 1.0f
 #define LED_GREEN_MUL 0.6f
 #define LED_BLUE_MUL 2.0f
+
+/* System clock frequency. */
+#define SYS_CLOCK_HZ (125 * 1000 * 1000)

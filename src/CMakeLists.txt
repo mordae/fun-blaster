@@ -4,6 +4,7 @@ add_executable(
   ws.c
   ws.S
   ircodes.c
+  tx.c
   )
 
 target_link_libraries(

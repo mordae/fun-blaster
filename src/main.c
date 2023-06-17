@@ -23,11 +23,13 @@
 
 #include "ircodes.h"
 #include "ws.h"
+#include "tx.h"
 
 
 /* We need these to keep track of registered tasks. */
 static task_t switch_task_id;
 static task_t stats_task_id;
+static task_t tx_task_id;
 
 
 /*
@@ -50,11 +52,19 @@ static void switch_task(void)
 		/* Print what we have received. */
 		printf("sw: num=%i, sw=%i\n", event.num, event.sw);
 
-		/* Change LED color. */
-		if (event.sw)
+		if (event.sw) {
+			/* Change LED color. */
 			ws_set_rgb(0, 7, 0);
-		else
+
+			/* Enable IR blasting. */
+			tx_enable(true);
+		} else {
+			/* Reset LED color. */
 			ws_set_rgb(3, 0, 0);
+
+			/* Disable IR blasting. */
+			tx_enable(false);
+		}
 	}
 }
 
@@ -136,6 +146,12 @@ int main()
 	task_set_name(stats_task_id, "stats");
 	task_set_priority(stats_task_id, 1);
 	task_set_ready(stats_task_id);
+
+	/* Prepare the "tx" task. */
+	tx_task_id = task_create(tx_task, 1536);
+	task_set_name(tx_task_id, "tx");
+	task_set_priority(tx_task_id, 1);
+	task_set_ready(tx_task_id);
 
 	/* Run tasks on this core indefinitely. */
 	task_run_loop();
