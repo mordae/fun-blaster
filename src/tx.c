@@ -46,7 +46,60 @@ static void tx_play_script(struct ir_script *script)
 	gpio_init(IR_EN_PIN);
 	gpio_disable_pulls(IR_TX_PIN);
 
-	/* TODO: We need to write this! */
+	if (script->freq) {
+		/* Script has carrier frequency, so we are using PWM to
+		 * transmit this script. Switch GPIO over to PWM. */
+		gpio_set_function(IR_TX_PIN, GPIO_FUNC_PWM);
+
+		/* Prepare PWM configuration. */
+		pwm_config pwm_conf = pwm_get_default_config();
+		pwm_init(IR_TX_SLICE, &pwm_conf, false);
+
+		/* Determine frequency divider from the system clock and
+		 * desired carrier wave frequency. Then use it to configure
+		 * the PWM clock divider. */
+		float div = (SYS_CLOCK_HZ / 24.0f) / (float)script->freq;
+		pwm_set_clkdiv(IR_TX_SLICE, div);
+
+		/* To accomodate limited range of above divider, we need
+		 * to further divide the carrier frequency. Use 24 steps
+		 * per period. */
+		pwm_set_wrap(IR_TX_SLICE, 23);
+
+		/* Start with the carrier being off. */
+		pwm_set_gpio_level(IR_TX_PIN, TX_DUTY_OFF);
+
+		/* But start the PWM slice itself. */
+		pwm_set_enabled(IR_TX_SLICE, true);
+
+		/* Transmit all the codes. */
+		for (unsigned i = 0; i < script->num_codes; i++) {
+			struct ir_code *code = &script->codes[i];
+
+			/* Toggle between 50% duty and 0% duty. */
+			pwm_set_gpio_level(IR_TX_PIN, TX_DUTY_ON * code->en);
+
+			/* Wait as indicated by the script. */
+			task_sleep_us(10 * code->us);
+		}
+
+		/* Once finished, disable the PWM slice. */
+		pwm_set_enabled(IR_TX_SLICE, false);
+	} else {
+		/* When no carrier frequency is given, we just toggle the LED
+		 * directly. In order to do that, switch it over to SIO. */
+		gpio_set_dir(IR_TX_PIN, GPIO_OUT);
+
+		for (unsigned i = 0; i < script->num_codes; i++) {
+			struct ir_code *code = &script->codes[i];
+
+			/* Toggle between on/off as indicated. */
+			gpio_put(IR_TX_PIN, code->en);
+
+			/* Again, wait as indicated. */
+			task_sleep_us(10 * code->us);
+		}
+	}
 
 	/* Reset & pull down the pin to keep the LED off. */
 	gpio_init(IR_EN_PIN);
