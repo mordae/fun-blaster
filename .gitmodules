@@ -1,6 +1,6 @@
 [submodule "vendor/pico-switch"]
 	path = vendor/pico-switch
-	url = git@github.com:mordae/pico-switch.git
+	url = https://github.com/mordae/pico-switch.git
 [submodule "vendor/pico-task"]
 	path = vendor/pico-task
-	url = git@github.com:mordae/pico-task.git
+	url = https://github.com/mordae/pico-task.git
